@@ -1,8 +1,5 @@
 var ttrs;
 (function (ttrs) {
-    class foo {
-    }
-    ttrs.foo = foo;
     let MinoType;
     (function (MinoType) {
         MinoType[MinoType["I"] = 0] = "I";
@@ -12,13 +9,14 @@ var ttrs;
         MinoType[MinoType["J"] = 4] = "J";
         MinoType[MinoType["L"] = 5] = "L";
         MinoType[MinoType["T"] = 6] = "T";
-    })(MinoType || (MinoType = {}));
+    })(MinoType = ttrs.MinoType || (ttrs.MinoType = {}));
     class Mino {
         constructor(minoType) {
             this.minoType = minoType;
             this.MinoType = minoType;
         }
     }
+    ttrs.Mino = Mino;
     class MinoHelper {
         static GenerateMinoMap(minoType) {
             switch (minoType) {
@@ -80,6 +78,33 @@ var ttrs;
             ];
         }
     }
+    ttrs.MinoHelper = MinoHelper;
+    class View {
+        constructor() {
+            this.blockOff = "□";
+            this.blockOn = "■";
+            this.width = 10;
+            this.height = 20;
+            this.Grid = [];
+            for (let h = 0; h < this.height; h++) {
+                this.Grid.push([]);
+                for (let w = 0; w < this.width; w++) {
+                    this.Grid[h].push(0);
+                }
+            }
+        }
+        DrawGrid() {
+            let result = "";
+            for (let h = 0; h < this.height; h++) {
+                for (let w = 0; w < this.width; w++) {
+                    result += this.Grid[h][w] == 1 ? this.blockOn : this.blockOff;
+                }
+                result += "<br/>";
+            }
+            return result;
+        }
+    }
+    ttrs.View = View;
 })(ttrs || (ttrs = {}));
-var foo = new ttrs.foo();
-console.log(foo);
+var view = new ttrs.View();
+document.querySelector("#view").innerHTML = view.DrawGrid();
