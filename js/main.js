@@ -81,10 +81,13 @@ var ttrs;
     ttrs.MinoHelper = MinoHelper;
     class View {
         constructor() {
+            this.Update = true;
             this.blockOff = "□";
             this.blockOn = "■";
             this.width = 10;
             this.height = 20;
+            this.tick = 0;
+            this.fps = 1000 / 30;
             this.Grid = [];
             for (let h = 0; h < this.height; h++) {
                 this.Grid.push([]);
@@ -103,8 +106,24 @@ var ttrs;
             }
             return result;
         }
+        Next() {
+            let newTick = Date.now();
+            let diff = newTick - this.tick;
+            this.tick = newTick;
+            if (diff / this.fps >= 1 || this.Update) {
+                this.Update = false;
+                return true;
+            }
+            return false;
+        }
     }
     ttrs.View = View;
 })(ttrs || (ttrs = {}));
 var view = new ttrs.View();
-document.querySelector("#view").innerHTML = view.DrawGrid();
+function animate_handler() {
+    if (view.Next()) {
+        document.querySelector("#view").innerHTML = view.DrawGrid();
+    }
+    window.requestAnimationFrame(animate_handler);
+}
+animate_handler();

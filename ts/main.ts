@@ -80,11 +80,15 @@ namespace ttrs{
     }
     export class View{
         public Grid : number[][];
+        public Update:boolean = true;
+
         private blockOff:string = "□";
         private blockOn:string = "■";
-
         private width : number =10;
         private height: number =20;
+        private tick : number = 0;
+        private fps:number = 1000/30;
+
         constructor() {
             this.Grid = [];
             for (let h = 0; h < this.height; h++) {
@@ -94,6 +98,7 @@ namespace ttrs{
                 }                
             }
         }
+
         public DrawGrid() : string{
             let result = "";
             for (let h = 0; h < this.height; h++) {
@@ -104,9 +109,25 @@ namespace ttrs{
             }
             return result;
         }
+
+        public Next():boolean{
+            let newTick = Date.now();
+            let diff = newTick - this.tick;
+            this.tick = newTick;
+            if( diff / this.fps >= 1 || this.Update) {
+                this.Update =false;
+                return true;
+            }
+            return false;
+        }
     }
 }
-  
-var view = new ttrs.View();
 
-document.querySelector("#view").innerHTML = view.DrawGrid();
+var view = new ttrs.View();
+function animate_handler() {
+    if(view.Next()){
+        document.querySelector("#view").innerHTML = view.DrawGrid();
+    }
+    window.requestAnimationFrame(animate_handler);
+}
+animate_handler();
