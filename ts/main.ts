@@ -12,12 +12,16 @@ namespace ttrs{
 
     export class Mino{
         public MinoType: MinoType;
-        constructor(public minoType: MinoType) {
-            this.MinoType = minoType;
+        public Map:number[][];
+        public X:number;
+        public Y:number;
+        constructor() {
         }
     }
     export class MinoHelper{
-        static GenerateMinoMap(minoType:MinoType):number[][] {
+        public static Width : number =10;
+        public static Height: number =20;
+        static GetMino(minoType:MinoType):number[][] {
             switch (minoType) {
                 case MinoType.I:
                         return [
@@ -77,6 +81,34 @@ namespace ttrs{
                 ];
         }
 
+        static Copy(grid:number[][]):number[][]{
+            let result:number[][] =[];
+            for (let r = 0; r < grid.length; r++) {
+                result.push(grid[r].concat());                
+            }
+            return result;
+        }
+
+        static Merge(base:number[][],mino:number[][],y:number,x:number):[number[][],boolean]{
+            let result = MinoHelper.Copy(base);
+            for (let h = 0; h < mino.length; h++) {
+                for (let w = 0; w < mino.length; w++) {
+                    if(mino[h][w] == 0){
+                        continue;
+                    }
+                    if(h+y > MinoHelper.Height -1 
+                        || w+x > MinoHelper.Width -1 
+                        || h+y < 0 
+                        || w+x < 0 
+                        ){
+                        return [MinoHelper.Copy(base),false];
+                    }
+                    result[h+y][w+x] = 1;
+                }
+            }
+            return [result,true];
+        }
+
     }
     export class View{
         public Grid : number[][];
@@ -84,16 +116,15 @@ namespace ttrs{
 
         private blockOff:string = "□";
         private blockOn:string = "■";
-        private width : number =10;
-        private height: number =20;
+
         private tick : number = 0;
         private fps:number = 1000/30;
 
         constructor() {
             this.Grid = [];
-            for (let h = 0; h < this.height; h++) {
+            for (let h = 0; h < MinoHelper.Height; h++) {
                 this.Grid.push([]);
-                for (let w = 0; w < this.width; w++) {
+                for (let w = 0; w < MinoHelper.Width; w++) {
                     this.Grid[h].push(0);
                 }                
             }
@@ -101,8 +132,8 @@ namespace ttrs{
 
         public DrawGrid() : string{
             let result = "";
-            for (let h = 0; h < this.height; h++) {
-                for (let w = 0; w < this.width; w++) {
+            for (let h = 0; h < MinoHelper.Height; h++) {
+                for (let w = 0; w < MinoHelper.Width; w++) {
                     result += this.Grid[h][w] == 1 ? this.blockOn : this.blockOff;         
                 }
                 result += "<br/>";
@@ -124,6 +155,8 @@ namespace ttrs{
 }
 
 var view = new ttrs.View();
+var result = ttrs.MinoHelper.Merge(view.Grid,ttrs.MinoHelper.GetMino(ttrs.MinoType.T),2,5);
+view.Grid = result[0];
 function animate_handler() {
     if(view.Next()){
         document.querySelector("#view").innerHTML = view.DrawGrid();
