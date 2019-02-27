@@ -104,26 +104,36 @@ var ttrs;
     MinoHelper.Width = 10;
     MinoHelper.Height = 20;
     ttrs.MinoHelper = MinoHelper;
-    class View {
-        constructor() {
+    class Game {
+        constructor(document) {
             this.Update = true;
             this.blockOff = "□";
             this.blockOn = "■";
             this.tick = 0;
             this.fps = 1000 / 30;
             this.Grid = [];
+            document.addEventListener("keydown", (e) => {
+                this.onKeyDown(this, e);
+            });
+            this.Init();
+        }
+        Init() {
             for (let h = 0; h < MinoHelper.Height; h++) {
                 this.Grid.push([]);
                 for (let w = 0; w < MinoHelper.Width; w++) {
                     this.Grid[h].push(0);
                 }
             }
+            this.mino = ttrs.MinoHelper.GetMino(ttrs.MinoType.T);
+            this.minoX = MinoHelper.Width / 2;
+            this.minoY = 0;
         }
         DrawGrid() {
             let result = "";
+            let grid = MinoHelper.Merge(this.Grid, this.mino, this.minoY, this.minoX)[0];
             for (let h = 0; h < MinoHelper.Height; h++) {
                 for (let w = 0; w < MinoHelper.Width; w++) {
-                    result += this.Grid[h][w] == 1 ? this.blockOn : this.blockOff;
+                    result += grid[h][w] == 1 ? this.blockOn : this.blockOff;
                 }
                 result += "<br/>";
             }
@@ -139,12 +149,29 @@ var ttrs;
             }
             return false;
         }
+        onKeyDown(game, e) {
+            switch (e.keyCode) {
+                case 37: //←
+                    this.minoX += -1;
+                    break;
+                case 38: //←
+                    this.minoY += -1;
+                    break;
+                case 39: //→
+                    this.minoX += +1;
+                    break;
+                case 40: //↓
+                    this.minoY += +1;
+                    break;
+                default:
+                    break;
+            }
+            game.Update = true;
+        }
     }
-    ttrs.View = View;
+    ttrs.Game = Game;
 })(ttrs || (ttrs = {}));
-var view = new ttrs.View();
-var result = ttrs.MinoHelper.Merge(view.Grid, ttrs.MinoHelper.GetMino(ttrs.MinoType.T), 2, 5);
-view.Grid = result[0];
+var view = new ttrs.Game(document);
 function animate_handler() {
     if (view.Next()) {
         document.querySelector("#view").innerHTML = view.DrawGrid();
