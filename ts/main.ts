@@ -109,6 +109,30 @@ namespace ttrs{
             return [result,true];
         }
 
+        public static Falled(base:number[][],mino:number[][],y:number,x:number):boolean{
+            for (let h = 0; h < mino.length; h++) {
+                for (let w = 0; w < mino.length; w++) {
+                    if(mino[h][w] == 0){
+                        continue;
+                    }
+                    if(h+y > MinoHelper.Height -1 
+                        || w+x > MinoHelper.Width -1 
+                        || h+y < 0 
+                        || w+x < 0 
+                        ){
+                        return true;
+                    }
+                    if(h + y == MinoHelper.Height -1){ //最下段
+                        return true;
+                    }
+                    if(base[h + y + 1][w + x] == 1){ // 下にブロックがある
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
     }
     export class Game{
         public Grid : number[][];
@@ -122,6 +146,8 @@ namespace ttrs{
 
         private minoX : number;
         private minoY : number;
+        private plusX : number = 0;
+        private plusY : number = 0;
         private mino : number[][];
 
         constructor(document:Document) {
@@ -160,26 +186,47 @@ namespace ttrs{
         public Next():boolean{
             let newTick = Date.now();
             let diff = newTick - this.tick;
-            this.tick = newTick;
             if( diff / this.fps >= 1 || this.Update) {
+                this.tick = newTick;
                 this.Update =false;
+                this.nextScene();
                 return true;
             }
             return false;
         }
+
+        private nextScene(){
+            if(MinoHelper.Falled(this.Grid,this.mino,this.minoY,this.minoX)){
+                var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX);
+                this.Grid = result[0];
+                this.minoY = 0;
+                this.minoX = MinoHelper.Width / 2;
+            }else{
+                if(this.plusX != 0){
+                    var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
+                    if(result[1] == true){
+                        this.minoX += this.plusX;
+                    }
+                }
+                this.minoY += 1;
+            }
+            this.plusX = 0;
+            this.plusY = 0;
+        }
+
         private onKeyDown(game:Game,e: KeyboardEvent){
             switch (e.keyCode) {
                 case 37: //←
-                    this.minoX += -1;
+                    this.plusX = -1;
                     break;
                 case 38: //←
-                    this.minoY += -1;
+                    this.plusY = -1;
                     break;
                 case 39: //→
-                    this.minoX += +1;
+                    this.plusX = +1;
                     break;
                 case 40: //↓
-                    this.minoY += +1;
+                    this.plusY = +1;
                     break;
                 default:
                     break;
