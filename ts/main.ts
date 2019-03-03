@@ -8,6 +8,7 @@ namespace ttrs{
         J,
         L,
         T,
+        None,
     }
 
     export class Mino{
@@ -21,6 +22,32 @@ namespace ttrs{
     export class MinoHelper{
         public static Width : number =10;
         public static Height: number =20;
+        private static minoArray:number[][][] = [];
+
+        static GetRandMino():number[][]{
+            if(this.minoArray.length == 0){
+                this.minoArray = this.GetMinoSet();
+            }
+
+            return this.minoArray.pop();
+        }
+
+        static GetMinoSet():number[][][]{
+            let result:number[][][] = [];
+            for (let i = 0; i < 6; i++) {
+                result.push(this.GetMino(i));
+            }
+
+            for(var i = result.length - 1; i > 0; i--){
+                var r = Math.floor(Math.random() * (i + 1));
+                var tmp = result[i];
+                result[i] = result[r];
+                result[r] = tmp;
+            }
+
+            return result;
+        }
+
         static GetMino(minoType:MinoType):number[][] {
             switch (minoType) {
                 case MinoType.I:
@@ -30,7 +57,7 @@ namespace ttrs{
                             [1,0,0,0],
                             [1,0,0,0],
                             ];
-                case MinoType.I:
+                case MinoType.O:
                     return [
                         [1,1,0,0],
                         [1,1,0,0],
@@ -122,7 +149,7 @@ namespace ttrs{
                         ){
                         return true;
                     }
-                    if(h + y == MinoHelper.Height -1){ //最下段
+                    if(h + y >= MinoHelper.Height -1){ //最下段
                         return true;
                     }
                     if(base[h + y + 1][w + x] == 1){ // 下にブロックがある
@@ -131,6 +158,101 @@ namespace ttrs{
                 }
             }
             return false;
+        }
+
+        public static IsGameOver(base:number[][],mino:number[][],y:number,x:number):boolean{
+            for (let h = 0; h < mino.length; h++) {
+                for (let w = 0; w < mino.length; w++) {
+                    if(mino[h][w] == 0){
+                        continue;
+                    }
+                    if(base[h+y][w+x] == 1){
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public static Rotate(mino:number[][],y:number,x:number):number[][]{
+            let result = MinoHelper.Copy(mino);
+            for (let h = 0; h < mino.length; h++) {
+                for (let w = 0; w < mino.length; w++) {
+                    result[h][w] = mino[mino.length -1 - w][h];
+                }
+            }
+            return this.Pad(result);
+        }
+
+        public static Pad(mino:number[][]):number[][]{
+            let x = mino.length;
+            let y = mino.length;
+            let result = this.GetMino(MinoType.None);
+            for (let h = 0; h < mino.length; h++) {
+                for (let w = 0; w < mino.length; w++) {
+                    if(mino[h][w]==1){
+                        y = Math.min(y,h);
+                        x = Math.min(x,w);
+                    }
+                }
+            }
+            for (let h = 0; h < mino.length; h++) {
+                for (let w = 0; w < mino.length; w++) {
+                    if(h+y >= mino.length ||
+                        w+x >= mino.length){
+                        continue;
+                    }
+                    if(mino[h+y][w+x]==1){
+                        result[h][w] = mino[h+y][w+x];
+                    }
+                }
+            }
+            return result;
+        }
+
+        public static GetBlackBase():number[][]{
+            let result:number[][] =[];
+            for (let h = 0; h < MinoHelper.Height; h++) {
+                result.push([]);
+                for (let w = 0; w < MinoHelper.Width; w++) {
+                    result[h].push(0);
+                }                
+            }
+            return result;
+        }
+
+        public static Delete(base:number[][]):number[][]{
+            let deleteLines:number[] =[]; 
+            let result = this.Copy(base);
+            for (let h = 0; h < MinoHelper.Height; h++) {
+                let allBlock = true; 
+                for (let w = 0; w < MinoHelper.Width; w++) {
+                    if(base[h][w]==0){
+                        allBlock = false;
+                    }
+                }
+                if(allBlock){
+                    deleteLines.push(h);
+                }
+            }
+
+            if(deleteLines.length == 0){
+                return base;
+            }
+
+            for (let d = deleteLines.length-1; d >= 0 ; d--) {
+                result.splice(deleteLines[d],1);
+            }
+
+            for (let d = 0; d < deleteLines.length ; d++) {
+                let row :number[] = [];
+                for (let w = 0; w < MinoHelper.Width; w++) {
+                    row.push(0);
+                }
+                result.unshift(row);
+            }
+
+            return result;
         }
 
     }
@@ -143,11 +265,13 @@ namespace ttrs{
 
         private tick : number = 0;
         private fps:number = 1000/30;
+        private frame :number = 0;
 
         private minoX : number;
         private minoY : number;
         private plusX : number = 0;
         private plusY : number = 0;
+        private plusRotate :number = 0;
         private mino : number[][];
 
         constructor(document:Document) {
@@ -159,13 +283,14 @@ namespace ttrs{
         }
 
         public Init(){
+            this.Grid =[];
             for (let h = 0; h < MinoHelper.Height; h++) {
                 this.Grid.push([]);
                 for (let w = 0; w < MinoHelper.Width; w++) {
                     this.Grid[h].push(0);
                 }                
             }
-            this.mino = ttrs.MinoHelper.GetMino(ttrs.MinoType.T)
+            this.mino = ttrs.MinoHelper.GetRandMino();
             this.minoX=MinoHelper.Width / 2;
             this.minoY=0;
         }
@@ -196,41 +321,59 @@ namespace ttrs{
         }
 
         private nextScene(){
+            this.frame += 1;
             if(MinoHelper.Falled(this.Grid,this.mino,this.minoY,this.minoX)){
                 var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX);
                 this.Grid = result[0];
+                this.mino = MinoHelper.GetRandMino();
                 this.minoY = 0;
                 this.minoX = MinoHelper.Width / 2;
-            }else{
-                if(this.plusX != 0){
-                    var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
-                    if(result[1] == true){
-                        this.minoX += this.plusX;
-                    }
+                this.Grid = MinoHelper.Delete(this.Grid);
+                if(MinoHelper.IsGameOver(this.Grid,this.mino,this.minoY,this.minoX)){
+                    this.Init();
                 }
-                this.minoY += 1;
+            }else if(this.plusRotate != 0){
+                let rotate = MinoHelper.Rotate(this.mino,this.minoY,this.minoX);
+                var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
+                if(result[1] == true){
+                    this.mino = rotate;
+                }
+            }else if(this.plusX != 0){
+                var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
+                if(result[1] == true){
+                    this.minoX += this.plusX;
+                }
+            }else{
+                if(this.frame % 3 == 0 || this.plusY != 0){
+                    this.minoY += 1;
+                }
             }
             this.plusX = 0;
             this.plusY = 0;
+            this.plusRotate = 0;
         }
 
         private onKeyDown(game:Game,e: KeyboardEvent){
             switch (e.keyCode) {
-                case 37: //←
+                case 37: //左
                     this.plusX = -1;
                     break;
-                case 38: //←
+                case 38: //上
                     this.plusY = -1;
                     break;
-                case 39: //→
+                case 39: //右
                     this.plusX = +1;
                     break;
-                case 40: //↓
+                case 40: //下
                     this.plusY = +1;
+                    break;
+                case 32: //Space
+                    this.plusRotate = 1;
                     break;
                 default:
                     break;
             }
+            e.preventDefault();
             game.Update = true;　
         }
     }
