@@ -11,6 +11,11 @@ var ttrs;
         MinoType[MinoType["T"] = 6] = "T";
         MinoType[MinoType["None"] = 7] = "None";
     })(MinoType = ttrs.MinoType || (ttrs.MinoType = {}));
+    let Action;
+    (function (Action) {
+        Action[Action["None"] = 0] = "None";
+        Action[Action["Put"] = 1] = "Put";
+    })(Action = ttrs.Action || (ttrs.Action = {}));
     class Mino {
         constructor() {
         }
@@ -279,12 +284,13 @@ var ttrs;
             if (diff / this.fps >= 1 || this.Update) {
                 this.tick = newTick;
                 this.Update = false;
-                this.nextScene();
-                return true;
+                let action = this.nextScene();
+                return [true, action];
             }
-            return false;
+            return [false, Action.None];
         }
         nextScene() {
+            let action = Action.None;
             this.frame += 1;
             if (MinoHelper.Falled(this.Grid, this.mino, this.minoY, this.minoX)) {
                 var result = MinoHelper.Merge(this.Grid, this.mino, this.minoY, this.minoX);
@@ -293,6 +299,7 @@ var ttrs;
                 this.minoY = 0;
                 this.minoX = MinoHelper.Width / 2;
                 this.Grid = MinoHelper.Delete(this.Grid);
+                action = Action.Put;
                 if (MinoHelper.IsGameOver(this.Grid, this.mino, this.minoY, this.minoX)) {
                     this.Init();
                 }
@@ -318,6 +325,7 @@ var ttrs;
             this.plusX = 0;
             this.plusY = 0;
             this.plusRotate = 0;
+            return action;
         }
         onKeyDown(game, e) {
             switch (e.keyCode) {
@@ -337,6 +345,8 @@ var ttrs;
                     this.plusRotate = 1;
                     break;
                 default:
+                    this.plusRotate = 1;
+                    break;
                     break;
             }
             e.preventDefault();
@@ -347,8 +357,15 @@ var ttrs;
 })(ttrs || (ttrs = {}));
 var view = new ttrs.Game(document);
 function animate_handler() {
-    if (view.Next()) {
+    let result = view.Next();
+    if (result[0]) {
         document.querySelector("#view").innerHTML = view.DrawGrid();
+        if (result[1] == ttrs.Action.Put) {
+            document.querySelector("#view").classList.add("puru");
+        }
+        else {
+            document.querySelector("#view").classList.remove("puru");
+        }
     }
     window.requestAnimationFrame(animate_handler);
 }

@@ -11,6 +11,11 @@ namespace ttrs{
         None,
     }
 
+    export enum Action{
+        None,
+        Put,
+    }
+
     export class Mino{
         public MinoType: MinoType;
         public Map:number[][];
@@ -308,19 +313,20 @@ namespace ttrs{
             return result;
         }
 
-        public Next():boolean{
+        public Next():[boolean,Action]{
             let newTick = Date.now();
             let diff = newTick - this.tick;
             if( diff / this.fps >= 1 || this.Update) {
                 this.tick = newTick;
                 this.Update =false;
-                this.nextScene();
-                return true;
+                let action = this.nextScene();
+                return [true,action];
             }
-            return false;
+            return [false,Action.None];
         }
 
-        private nextScene(){
+        private nextScene():Action{
+            let action:Action = Action.None;
             this.frame += 1;
             if(MinoHelper.Falled(this.Grid,this.mino,this.minoY,this.minoX)){
                 var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX);
@@ -329,6 +335,7 @@ namespace ttrs{
                 this.minoY = 0;
                 this.minoX = MinoHelper.Width / 2;
                 this.Grid = MinoHelper.Delete(this.Grid);
+                action = Action.Put;
                 if(MinoHelper.IsGameOver(this.Grid,this.mino,this.minoY,this.minoX)){
                     this.Init();
                 }
@@ -351,6 +358,7 @@ namespace ttrs{
             this.plusX = 0;
             this.plusY = 0;
             this.plusRotate = 0;
+            return action;
         }
 
         private onKeyDown(game:Game,e: KeyboardEvent){
@@ -371,6 +379,8 @@ namespace ttrs{
                     this.plusRotate = 1;
                     break;
                 default:
+                    this.plusRotate = 1;
+                    break;
                     break;
             }
             e.preventDefault();
@@ -381,8 +391,14 @@ namespace ttrs{
 
 var view = new ttrs.Game(document);
 function animate_handler() {
-    if(view.Next()){
+    let result = view.Next();
+    if(result[0]){
         document.querySelector("#view").innerHTML = view.DrawGrid();
+        if(result[1] == ttrs.Action.Put){
+            document.querySelector("#view").classList.add("puru");
+        }else{
+            document.querySelector("#view").classList.remove("puru");
+        }
     }
     window.requestAnimationFrame(animate_handler);
 }
