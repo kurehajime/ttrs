@@ -135,6 +135,9 @@ namespace ttrs{
                         ){
                         return [MinoHelper.Copy(base),false];
                     }
+                    if(result[h+y][w+x] == 1){
+                        return [MinoHelper.Copy(base),false];
+                    }
                     result[h+y][w+x] = 1;
                 }
             }
@@ -328,7 +331,18 @@ namespace ttrs{
         private nextScene():Action{
             let action:Action = Action.None;
             this.frame += 1;
-            if(MinoHelper.Falled(this.Grid,this.mino,this.minoY,this.minoX)){
+            if(this.plusRotate != 0){
+                let rotate = MinoHelper.Rotate(this.mino,this.minoY,this.minoX);
+                var result = MinoHelper.Merge(this.Grid,rotate,this.minoY,this.minoX + this.plusX);
+                if(result[1] == true){
+                    this.mino = rotate;
+                }
+            }else if(this.plusX != 0){
+                var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
+                if(result[1] == true){
+                    this.minoX += this.plusX;
+                }
+            }else if(MinoHelper.Falled(this.Grid,this.mino,this.minoY,this.minoX)){
                 var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX);
                 this.Grid = result[0];
                 this.mino = MinoHelper.GetRandMino();
@@ -339,18 +353,7 @@ namespace ttrs{
                 if(MinoHelper.IsGameOver(this.Grid,this.mino,this.minoY,this.minoX)){
                     this.Init();
                 }
-            }else if(this.plusRotate != 0){
-                let rotate = MinoHelper.Rotate(this.mino,this.minoY,this.minoX);
-                var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
-                if(result[1] == true){
-                    this.mino = rotate;
-                }
-            }else if(this.plusX != 0){
-                var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
-                if(result[1] == true){
-                    this.minoX += this.plusX;
-                }
-            }else{
+            }else {
                 if(this.frame % 3 == 0 || this.plusY != 0){
                     this.minoY += 1;
                 }
