@@ -393,14 +393,15 @@ namespace ttrs{
 }
 
 var view = new ttrs.Game(document);
+var viewElement = document.querySelector("#view");
 function animate_handler() {
     let result = view.Next();
     if(result[0]){
-        document.querySelector("#view").innerHTML = view.DrawGrid();
+        viewElement.innerHTML = view.DrawGrid();
         if(result[1] == ttrs.Action.Put){
-            document.querySelector("#view").classList.add("puru");
+            viewElement.classList.add("puru");
         }else{
-            document.querySelector("#view").classList.remove("puru");
+            viewElement.classList.remove("puru");
         }
     }
     window.requestAnimationFrame(animate_handler);
