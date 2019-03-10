@@ -384,7 +384,6 @@ namespace ttrs{
                 default:
                     this.plusRotate = 1;
                     break;
-                    break;
             }
             e.preventDefault();
             game.Update = true;　
