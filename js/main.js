@@ -15,6 +15,7 @@ var ttrs;
     (function (Action) {
         Action[Action["None"] = 0] = "None";
         Action[Action["Put"] = 1] = "Put";
+        Action[Action["Del"] = 2] = "Del";
     })(Action = ttrs.Action || (ttrs.Action = {}));
     class Mino {
         constructor() {
@@ -30,7 +31,7 @@ var ttrs;
         }
         static GetMinoSet() {
             let result = [];
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 result.push(this.GetMino(i));
             }
             for (var i = result.length - 1; i > 0; i--) {
@@ -222,7 +223,7 @@ var ttrs;
                 }
             }
             if (deleteLines.length == 0) {
-                return base;
+                return [base, false];
             }
             for (let d = deleteLines.length - 1; d >= 0; d--) {
                 result.splice(deleteLines[d], 1);
@@ -234,7 +235,7 @@ var ttrs;
                 }
                 result.unshift(row);
             }
-            return result;
+            return [result, true];
         }
     }
     MinoHelper.Width = 10;
@@ -249,6 +250,9 @@ var ttrs;
             this.tick = 0;
             this.fps = 1000 / 30;
             this.frame = 0;
+            this.wait = false;
+            this.actionCount = 0;
+            this.prevAction = Action.None;
             this.plusX = 0;
             this.plusY = 0;
             this.plusRotate = 0;
@@ -301,23 +305,38 @@ var ttrs;
                 if (result[1] == true) {
                     this.mino = rotate;
                 }
+                this.wait = true;
             }
             else if (this.plusX != 0) {
                 var result = MinoHelper.Merge(this.Grid, this.mino, this.minoY, this.minoX + this.plusX);
                 if (result[1] == true) {
                     this.minoX += this.plusX;
                 }
+                this.wait = true;
             }
             else if (MinoHelper.Falled(this.Grid, this.mino, this.minoY, this.minoX)) {
-                var result = MinoHelper.Merge(this.Grid, this.mino, this.minoY, this.minoX);
-                this.Grid = result[0];
-                this.mino = MinoHelper.GetRandMino();
-                this.minoY = 0;
-                this.minoX = MinoHelper.Width / 2;
-                this.Grid = MinoHelper.Delete(this.Grid);
                 action = Action.Put;
-                if (MinoHelper.IsGameOver(this.Grid, this.mino, this.minoY, this.minoX)) {
-                    this.Init();
+                let result = MinoHelper.Merge(this.Grid, this.mino, this.minoY, this.minoX);
+                let deleted = MinoHelper.Delete(result[0])[1];
+                if (this.frame % 6 == 0 || deleted) {
+                    if (this.wait == true && deleted == false) {
+                        this.wait = false;
+                    }
+                    else {
+                        this.Grid = result[0];
+                        this.mino = MinoHelper.GetRandMino();
+                        this.minoY = 0;
+                        this.minoX = MinoHelper.Width / 2;
+                        let del = MinoHelper.Delete(this.Grid);
+                        this.Grid = del[0];
+                        if (deleted) {
+                            this.prevAction = Action.Del;
+                            this.actionCount = 18;
+                        }
+                        if (MinoHelper.IsGameOver(this.Grid, this.mino, this.minoY, this.minoX)) {
+                            this.Init();
+                        }
+                    }
                 }
             }
             else {
@@ -328,6 +347,13 @@ var ttrs;
             this.plusX = 0;
             this.plusY = 0;
             this.plusRotate = 0;
+            if (this.actionCount > 0) {
+                this.actionCount += -1;
+                action = this.prevAction;
+            }
+            else {
+                this.prevAction = action;
+            }
             return action;
         }
         onKeyDown(game, e) {
@@ -366,8 +392,12 @@ function animate_handler() {
         if (result[1] == ttrs.Action.Put) {
             viewElement.classList.add("puru");
         }
+        else if (result[1] == ttrs.Action.Del) {
+            viewElement.classList.add("pika");
+        }
         else {
             viewElement.classList.remove("puru");
+            viewElement.classList.remove("pika");
         }
     }
     window.requestAnimationFrame(animate_handler);

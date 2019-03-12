@@ -14,6 +14,7 @@ namespace ttrs{
     export enum Action{
         None,
         Put,
+        Del,
     }
 
     export class Mino{
@@ -39,7 +40,7 @@ namespace ttrs{
 
         static GetMinoSet():number[][][]{
             let result:number[][][] = [];
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 result.push(this.GetMino(i));
             }
 
@@ -229,7 +230,7 @@ namespace ttrs{
             return result;
         }
 
-        public static Delete(base:number[][]):number[][]{
+        public static Delete(base:number[][]):[number[][],boolean]{
             let deleteLines:number[] =[]; 
             let result = this.Copy(base);
             for (let h = 0; h < MinoHelper.Height; h++) {
@@ -245,7 +246,7 @@ namespace ttrs{
             }
 
             if(deleteLines.length == 0){
-                return base;
+                return [base,false];
             }
 
             for (let d = deleteLines.length-1; d >= 0 ; d--) {
@@ -260,7 +261,7 @@ namespace ttrs{
                 result.unshift(row);
             }
 
-            return result;
+            return [result,true];
         }
 
     }
@@ -274,6 +275,9 @@ namespace ttrs{
         private tick : number = 0;
         private fps:number = 1000/30;
         private frame :number = 0;
+        private wait :boolean =false;
+        private actionCount:number = 0;
+        private prevAction:Action = Action.None;
 
         private minoX : number;
         private minoY : number;
@@ -331,27 +335,42 @@ namespace ttrs{
         private nextScene():Action{
             let action:Action = Action.None;
             this.frame += 1;
+
             if(this.plusRotate != 0){
                 let rotate = MinoHelper.Rotate(this.mino,this.minoY,this.minoX);
                 var result = MinoHelper.Merge(this.Grid,rotate,this.minoY,this.minoX + this.plusX);
                 if(result[1] == true){
                     this.mino = rotate;
                 }
+                this.wait = true;
             }else if(this.plusX != 0){
                 var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX + this.plusX);
                 if(result[1] == true){
                     this.minoX += this.plusX;
                 }
+                this.wait = true;
             }else if(MinoHelper.Falled(this.Grid,this.mino,this.minoY,this.minoX)){
-                var result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX);
-                this.Grid = result[0];
-                this.mino = MinoHelper.GetRandMino();
-                this.minoY = 0;
-                this.minoX = MinoHelper.Width / 2;
-                this.Grid = MinoHelper.Delete(this.Grid);
                 action = Action.Put;
-                if(MinoHelper.IsGameOver(this.Grid,this.mino,this.minoY,this.minoX)){
-                    this.Init();
+                let result = MinoHelper.Merge(this.Grid,this.mino,this.minoY,this.minoX);
+                let deleted = MinoHelper.Delete(result[0])[1];
+                if(this.frame % 6 == 0 || deleted){
+                    if(this.wait == true && deleted ==false){
+                        this.wait = false;
+                    }else{
+                        this.Grid = result[0];
+                        this.mino = MinoHelper.GetRandMino();
+                        this.minoY = 0;
+                        this.minoX = MinoHelper.Width / 2;
+                        let del= MinoHelper.Delete(this.Grid);
+                        this.Grid = del[0];
+                        if(deleted){
+                            this.prevAction = Action.Del;
+                            this.actionCount = 18;
+                        }
+                        if(MinoHelper.IsGameOver(this.Grid,this.mino,this.minoY,this.minoX)){
+                            this.Init();
+                        }
+                    }
                 }
             }else {
                 if(this.frame % 3 == 0 || this.plusY != 0){
@@ -361,6 +380,12 @@ namespace ttrs{
             this.plusX = 0;
             this.plusY = 0;
             this.plusRotate = 0;
+            if(this.actionCount > 0){
+                this.actionCount += -1;
+                action = this.prevAction;
+            }else{
+                this.prevAction = action;
+            }
             return action;
         }
 
@@ -399,8 +424,11 @@ function animate_handler() {
         viewElement.innerHTML = view.DrawGrid();
         if(result[1] == ttrs.Action.Put){
             viewElement.classList.add("puru");
+        }else if(result[1] == ttrs.Action.Del){
+            viewElement.classList.add("pika");
         }else{
             viewElement.classList.remove("puru");
+            viewElement.classList.remove("pika");
         }
     }
     window.requestAnimationFrame(animate_handler);
