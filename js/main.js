@@ -314,6 +314,21 @@ var ttrs;
                 if (ok) {
                     this.minoY = this.minoY - i;
                 }
+                else {
+                    let lr = [-1, 1, -2, 2, -3, 3, -4, 4];
+                    for (i = 0; i < lr.length; i++) {
+                        let rotate = MinoHelper.Rotate(this.mino, this.minoY, this.minoX + lr[i]);
+                        let result = MinoHelper.Merge(this.Grid, rotate, this.minoY, this.minoX + this.plusX + lr[i]);
+                        if (result[1] == true) {
+                            this.mino = rotate;
+                            ok = true;
+                            break;
+                        }
+                    }
+                    if (ok) {
+                        this.minoX = this.minoX + lr[i];
+                    }
+                }
                 this.wait = true;
             }
             else if (this.plusX != 0) {
