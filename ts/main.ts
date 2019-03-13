@@ -337,10 +337,19 @@ namespace ttrs{
             this.frame += 1;
 
             if(this.plusRotate != 0){
-                let rotate = MinoHelper.Rotate(this.mino,this.minoY,this.minoX);
-                var result = MinoHelper.Merge(this.Grid,rotate,this.minoY,this.minoX + this.plusX);
-                if(result[1] == true){
-                    this.mino = rotate;
+                let i=0;
+                let ok :boolean = false;
+                for (i = 0; i < 4; i++) {
+                    let rotate = MinoHelper.Rotate(this.mino,this.minoY - i,this.minoX);
+                    let result = MinoHelper.Merge(this.Grid,rotate,this.minoY - i,this.minoX + this.plusX);
+                    if(result[1] == true){
+                        this.mino = rotate;
+                        ok = true;
+                        break;
+                    }
+                }
+                if(ok){
+                    this.minoY = this.minoY - i;
                 }
                 this.wait = true;
             }else if(this.plusX != 0){
