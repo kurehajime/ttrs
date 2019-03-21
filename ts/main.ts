@@ -145,6 +145,16 @@ namespace ttrs{
             return [result,true];
         }
 
+        public static Drop(base:number[][],mino:number[][],y:number,x:number):number[][]{
+            let result = this.Copy(base);
+            for (let i = 0; i < this.Height; i++) {
+                if(this.Falled(result,mino,y + i ,x)){
+                    return this.Merge(result,mino,y + i ,x)[0];
+                }
+            }
+            return result;
+        }
+
         public static Falled(base:number[][],mino:number[][],y:number,x:number):boolean{
             for (let h = 0; h < mino.length; h++) {
                 for (let w = 0; w < mino.length; w++) {
@@ -382,23 +392,17 @@ namespace ttrs{
                     if(this.wait == true && deleted ==false){
                         this.wait = false;
                     }else{
-                        this.Grid = result[0];
-                        this.mino = MinoHelper.GetRandMino();
-                        this.minoY = 0;
-                        this.minoX = MinoHelper.Width / 2;
-                        let del= MinoHelper.Delete(this.Grid);
-                        this.Grid = del[0];
-                        if(deleted){
-                            this.prevAction = Action.Del;
-                            this.actionCount = 18;
-                        }
-                        if(MinoHelper.IsGameOver(this.Grid,this.mino,this.minoY,this.minoX)){
-                            this.Init();
-                        }
+                        this.FalledAction(result[0],deleted);
                     }
                 }
+            }else if(this.plusY < 0){
+                let result  = MinoHelper.Drop(this.Grid,this.mino,this.minoY,this.minoX);
+                let deleted = MinoHelper.Delete(result)[1];
+                this.Grid = result;
+                action = Action.Put;
+                this.FalledAction(result,deleted);
             }else {
-                if(this.frame % 3 == 0 || this.plusY != 0){
+                if(this.frame % 3 == 0 || this.plusY > 0){
                     this.minoY += 1;
                 }
             }
@@ -412,6 +416,22 @@ namespace ttrs{
                 this.prevAction = action;
             }
             return action;
+        }
+
+        private FalledAction(base:number[][] ,deleted:boolean){
+            this.Grid = base;
+            this.mino = MinoHelper.GetRandMino();
+            this.minoY = 0;
+            this.minoX = MinoHelper.Width / 2;
+            let del= MinoHelper.Delete(this.Grid);
+            this.Grid = del[0];
+            if(deleted){
+                this.prevAction = Action.Del;
+                this.actionCount = 18;
+            }
+            if(MinoHelper.IsGameOver(this.Grid,this.mino,this.minoY,this.minoX)){
+                this.Init();
+            }
         }
 
         private onKeyDown(game:Game,e: KeyboardEvent){
